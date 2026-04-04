@@ -7,14 +7,12 @@ Uses LLM with structured output for reliable parsing.
 from typing import List, Optional
 import json
 
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 from config import RESUME_EXTRACTION_PROMPT, settings
-import re
-import re
 
 
 class ResumeSkills(BaseModel):
@@ -86,19 +84,23 @@ class ResumeParsingChain:
             "temperature": self.temperature,
             "max_tokens": 2000,
             "timeout": 60,
-            "api_key": settings.GROQ_API_KEY,
         }
 
-        llm = ChatGroq(**llm_kwargs)
+        # Add custom endpoint if configured (for local/K8s models)
+        if settings.LLM_BASE_URL:
+            llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
+            llm_kwargs["api_key"] = settings.LLM_API_KEY
+
+        llm = ChatOpenAI(**llm_kwargs)
 
         # Create prompt template from config
         prompt = ChatPromptTemplate.from_messages([
-            ("system", RESUME_EXTRACTION_PROMPT + "\n\nIMPORTANT: Return ONLY valid JSON. Do NOT include any thinking tags, explanations, or additional text. Start your response directly with the JSON object."),
+            ("system", RESUME_EXTRACTION_PROMPT),
             ("user", "{resume_text}")
         ])
 
-        # Create the chain using LCEL with string output parser for manual JSON extraction
-        chain = prompt | llm | StrOutputParser()
+        # Create the chain using LCEL
+        chain = prompt | llm | JsonOutputParser(pydantic_object=ParsedResume)
 
         return chain
 
@@ -130,31 +132,10 @@ class ResumeParsingChain:
                 resume_text = resume_text[:last_period + 1]
 
         try:
-            raw_response = await chain.ainvoke({"resume_text": resume_text})
-            
-            # Debug: print raw response to see what we're getting
-            print(f"[ResumeChain] Raw LLM response: {raw_response[:200]}...")
-            
-            # Extract JSON from response - try multiple patterns
-            json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)
-            if not json_match:
-                # Try to find JSON between triple backticks
-                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', raw_response, re.DOTALL)
-            if not json_match:
-                # Try to find JSON after thinking tags
-                json_match = re.search(r'<\|begin\|><\|assistant\|>.*?(\{.*\})', raw_response, re.DOTALL)
-            
-            if json_match:
-                json_str = json_match.group(1) if json_match.lastindex else json_match.group(0)
-                # Clean up the JSON string
-                json_str = json_str.strip()
-                result = json.loads(json_str)
-                return ParsedResume(**result)
-            else:
-                raise ValueError("No JSON object found in LLM response")
+            result = await chain.ainvoke({"resume_text": resume_text})
+            # JsonOutputParser returns a dict, convert to ParsedResume
+            return ParsedResume(**result)
         except json.JSONDecodeError as e:
-            print(f"[ResumeChain] JSON decode error: {e}")
-            print(f"[ResumeChain] Problematic JSON: {json_str if 'json_str' in locals() else 'N/A'}")
             raise ValueError(f"Failed to parse LLM response as JSON: {str(e)}")
         except Exception as e:
             raise ValueError(f"Failed to parse resume: {str(e)}")
@@ -169,28 +150,27 @@ class ResumeParsingChain:
         Returns:
             List of skills
         """
-        llm = ChatGroq(
+        llm = ChatOpenAI(
             model=self.model_name,
             temperature=self.temperature,
             max_tokens=1000,
-            api_key=settings.GROQ_API_KEY,
         )
+
+        # Add custom endpoint if configured
+        if settings.LLM_BASE_URL:
+            llm.base_url = settings.LLM_BASE_URL.rstrip("/")
+            llm.api_key = settings.LLM_API_KEY
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", "Extract only the technical skills, programming languages, and tools from the resume text. Return as a JSON list of strings."),
             ("user", "Resume: {text}")
         ])
 
-        chain = prompt | llm | StrOutputParser()
+        chain = prompt | llm | JsonOutputParser(pydantic_object=ResumeSkills)
 
         try:
-            raw_response = await chain.ainvoke({"text": resume_text[:5000]})
-            json_match = re.search(r'\[.*\]', raw_response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                result = json.loads(json_str)
-                return result.get("skills", result) if isinstance(result, dict) else result
-            return []
+            result = await chain.ainvoke({"text": resume_text[:5000]})
+            return result["skills"]
         except Exception:
             return []
 

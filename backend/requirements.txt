@@ -10,17 +10,22 @@ pydantic-settings>=2.10.1
 # LangChain and LLM (latest as of Apr 2026)
 langchain>=1.2.15
 langchain-openai>=1.1.12
-langchain-groq>=1.1.2
 langchain-core>=1.2.25
 openai>=2.30.0
 tiktoken>=0.8.0
+
+# Numpy - pin to stable version that works on all platforms
+numpy>=1.26.3
 
 # Web Scraping
 httpx>=0.28.0
 beautifulsoup4>=4.14.0
 lxml>=5.3.0
-python-jobspy>=1.1.82
+
 # File Processing
 python-dotenv>=1.0.0
 PyPDF2>=3.0.0
 python-docx>=1.1.0
+
+# JobSpy for multi-source job scraping
+python-jobspy>=1.1.82

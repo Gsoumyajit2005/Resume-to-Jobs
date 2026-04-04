@@ -29,10 +29,9 @@ class Settings:
     SCRAPING_DELAY_MAX: float = 2.0  # Reduced from 3.0
 
     # LLM Configuration
-    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME")
-    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.siliconflow.cn/v1")  # Custom endpoint for local/K8s
+    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "claude-sonnet-4-6")
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "")  # Custom endpoint for local/K8s models
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "dummy")  # Required even for local models
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 2000
 
@@ -82,19 +81,17 @@ Instructions:
 6. For preferred roles, infer likely job titles based on experience
 
 Return a valid JSON object with the following structure:
-{{
-  "name": "candidate's full name",
-  "skills": ["skill1", "skill2"],
-  "experience": ["experience1", "experience2"],
-  "education": ["education1", "education2"],
-  "projects": ["project1", "project2"],
-  "preferred_roles": ["role1", "role2"]
-}}
-
-IMPORTANT: Return ONLY the JSON object. Do NOT include any thinking tags, explanations, or additional text.
+- name: string (candidate's full name)
+- skills: array of strings (technical skills)
+- experience: array of strings (job descriptions or achievements)
+- education: array of strings (education details)
+- projects: array of strings (project descriptions)
+- preferred_roles: array of strings (likely job titles)
 
 Resume Text:
-{{resume_text}}
+{resume_text}
+
+Return ONLY the JSON object, no other text.
 """
 
 JOB_MATCH_PROMPT = """
@@ -111,20 +108,18 @@ Your task:
 4. Consider role alignment
 
 Output a JSON object with:
-{{
-  "match_score": 0-100,
-  "reason": "explanation of the match",
-  "matched_skills": ["skill1", "skill2"],
-  "missing_skills": ["skill1", "skill2"]
-}}
+- match_score: integer 0-100 (how well the candidate matches)
+- reason: string (1-2 sentence explanation of the match)
+- matched_skills: array of strings (skills from resume that match the job)
+- missing_skills: array of strings (skills in job that are missing from resume)
 
 Resume Data:
-{{resume_data}}
+{resume_data}
 
 Job Description:
-{{job_description}}
+{job_description}
 
-IMPORTANT: Return ONLY the JSON object. Do NOT include any thinking tags, explanations, or additional text.
+Return ONLY the JSON object, no other text.
 """
 
 
