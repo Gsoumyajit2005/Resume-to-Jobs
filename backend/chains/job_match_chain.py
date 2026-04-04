@@ -3,16 +3,22 @@ Job Matching Chain.
 
 LangChain-based pipeline for scoring job-candidate matches.
 Uses LLM with structured output for reliable scoring.
+Supports both local LLM (OpenAI-compatible) and Groq.
 """
 from typing import List, Optional
 import json
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
-from config import JOB_MATCH_PROMPT, settings
+# Import LLM provider based on configuration
+from config import settings
+
+if settings.USE_GROQ:
+    from langchain_groq import ChatGroq as LLMProvider
+else:
+    from langchain_openai import ChatOpenAI as LLMProvider
 
 
 class MatchScore(BaseModel):
@@ -40,6 +46,7 @@ class JobMatchingChain:
     LangChain-based job matching pipeline.
 
     Scores how well a candidate's resume matches a job description.
+    Uses either local LLM or Groq based on USE_GROQ environment variable.
     """
 
     def __init__(self, model_name: str = None, temperature: float = 0.3):
@@ -63,12 +70,16 @@ class JobMatchingChain:
             "timeout": 60,
         }
 
-        # Add custom endpoint if configured (for local/K8s models)
-        if settings.LLM_BASE_URL:
-            llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
+        if settings.USE_GROQ:
+            # Groq configuration
+            llm_kwargs["api_key"] = settings.GROQ_API_KEY
+        else:
+            # Local LLM (OpenAI-compatible) configuration
+            if settings.LLM_BASE_URL:
+                llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
             llm_kwargs["api_key"] = settings.LLM_API_KEY
 
-        llm = ChatOpenAI(**llm_kwargs)
+        llm = LLMProvider(**llm_kwargs)
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", JOB_MATCH_PROMPT),

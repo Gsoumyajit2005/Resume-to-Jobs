@@ -3,16 +3,22 @@ Resume Parsing Chain.
 
 LangChain-based pipeline for extracting structured resume data from raw text.
 Uses LLM with structured output for reliable parsing.
+Supports both local LLM (OpenAI-compatible) and Groq.
 """
 from typing import List, Optional
 import json
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
-from config import RESUME_EXTRACTION_PROMPT, settings
+# Import LLM provider based on configuration
+from config import settings
+
+if settings.USE_GROQ:
+    from langchain_groq import ChatGroq as LLMProvider
+else:
+    from langchain_openai import ChatOpenAI as LLMProvider
 
 
 class ResumeSkills(BaseModel):
@@ -62,6 +68,7 @@ class ResumeParsingChain:
     LangChain-based resume parsing pipeline.
 
     Takes raw resume text and outputs structured ResumeData.
+    Uses either local LLM or Groq based on USE_GROQ environment variable.
     """
 
     def __init__(self, model_name: str = "claude-sonnet-4-6", temperature: float = 0.3):
@@ -86,12 +93,16 @@ class ResumeParsingChain:
             "timeout": 60,
         }
 
-        # Add custom endpoint if configured (for local/K8s models)
-        if settings.LLM_BASE_URL:
-            llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
+        if settings.USE_GROQ:
+            # Groq configuration
+            llm_kwargs["api_key"] = settings.GROQ_API_KEY
+        else:
+            # Local LLM (OpenAI-compatible) configuration
+            if settings.LLM_BASE_URL:
+                llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
             llm_kwargs["api_key"] = settings.LLM_API_KEY
 
-        llm = ChatOpenAI(**llm_kwargs)
+        llm = LLMProvider(**llm_kwargs)
 
         # Create prompt template from config
         prompt = ChatPromptTemplate.from_messages([
@@ -150,16 +161,20 @@ class ResumeParsingChain:
         Returns:
             List of skills
         """
-        llm = ChatOpenAI(
-            model=self.model_name,
-            temperature=self.temperature,
-            max_tokens=1000,
-        )
+        llm_kwargs = {
+            "model": self.model_name,
+            "temperature": self.temperature,
+            "max_tokens": 1000,
+        }
 
-        # Add custom endpoint if configured
-        if settings.LLM_BASE_URL:
-            llm.base_url = settings.LLM_BASE_URL.rstrip("/")
-            llm.api_key = settings.LLM_API_KEY
+        if settings.USE_GROQ:
+            llm_kwargs["api_key"] = settings.GROQ_API_KEY
+        else:
+            if settings.LLM_BASE_URL:
+                llm_kwargs["base_url"] = settings.LLM_BASE_URL.rstrip("/")
+            llm_kwargs["api_key"] = settings.LLM_API_KEY
+
+        llm = LLMProvider(**llm_kwargs)
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", "Extract only the technical skills, programming languages, and tools from the resume text. Return as a JSON list of strings."),

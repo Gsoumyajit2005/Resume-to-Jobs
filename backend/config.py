@@ -28,10 +28,12 @@ class Settings:
     SCRAPING_DELAY_MIN: float = 0.5  # Reduced from 1.0
     SCRAPING_DELAY_MAX: float = 2.0  # Reduced from 3.0
 
-    # LLM Configuration
+    # LLM Configuration - supports both local LLM and Groq
+    USE_GROQ: bool = os.getenv("USE_GROQ", "").lower() == "true"  # Set to true for Groq
     LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "claude-sonnet-4-6")
     LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "")  # Custom endpoint for local/K8s models
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "dummy")  # Required even for local models
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")  # Required when USE_GROQ=true
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 2000
 
