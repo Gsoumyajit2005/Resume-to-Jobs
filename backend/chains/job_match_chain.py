@@ -115,7 +115,7 @@ class JobMatchingChain:
             })
             
             # Debug: print raw response to see what we're getting
-            print(f"[JobMatchChain] Raw LLM response: {raw_response[:200]}...")
+            print(f"[JobMatchChain] response: {raw_response[:200]}...")
             
             # Extract JSON from response - try multiple patterns
             json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)

@@ -11,7 +11,6 @@ pydantic-settings>=2.10.1
 langchain>=1.2.15
 langchain-openai>=1.1.12
 langchain-groq>=1.1.2
-langchain-community>=0.4.1
 langchain-core>=1.2.25
 openai>=2.30.0
 tiktoken>=0.8.0
@@ -20,7 +19,7 @@ tiktoken>=0.8.0
 httpx>=0.28.0
 beautifulsoup4>=4.14.0
 lxml>=5.3.0
-
+python-jobspy>=1.1.82
 # File Processing
 python-dotenv>=1.0.0
 PyPDF2>=3.0.0

@@ -2,39 +2,20 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: resume-matcher-backend
     ports:
       - "8000:8000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - LLM_BASE_URL=${LLM_BASE_URL}
-      - LLM_API_KEY=${LLM_API_KEY:-dummy}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-claude-sonnet-4-6}
-      - API_URL=${API_URL:-http://localhost:8000}
-      - DEBUG=${DEBUG:-false}
-    volumes:
-      - ./backend:/app
+    # Change this line to point to the backend folder:
+    env_file: ./backend/.env 
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     container_name: resume-matcher-frontend
     ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8000
+      - "3000:80" # Maps your browser's 3000 to Nginx's 80
     depends_on:
       - backend
     restart: unless-stopped
