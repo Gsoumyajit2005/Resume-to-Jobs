@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.pyi
+.pyi
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# Conda
+conda-env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Project specific
+*.pdf
+*.docx
+temp_files/
+
+# Node modules (for backend when using node tools)
+node_modules/
+
+# Frontend
+frontend/dist/
+frontend/.vite/
+frontend/node_modules/
+
+# Docker
+.dockerignore
+
+# Generated files
+*.gen.py
+
+# Cache
+.cache/
+.temp/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+*.orig
+*.bak
