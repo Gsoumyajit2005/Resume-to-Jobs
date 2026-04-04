@@ -13,7 +13,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 # Import LLM provider based on configuration
-from config import settings
+from config import JOB_MATCH_PROMPT, settings
 
 if settings.USE_GROQ:
     from langchain_groq import ChatGroq as LLMProvider
