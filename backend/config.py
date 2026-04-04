@@ -6,6 +6,10 @@ for the application.
 """
 from typing import List, Dict, Any
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 # === Application Settings ===
@@ -15,19 +19,20 @@ class Settings:
     # Scraping thresholds
     JOB_AGE_DAYS_THRESHOLD: int = 30
     MAX_PARALLEL_SCRAPERS: int = 3
-    MAX_JOBS_PER_SOURCE: int = 20
+    MAX_JOBS_PER_SOURCE: int = 20  # Increased from 10 to get more jobs from each source
     MAX_JOBS_FOR_LLM_SCORING: int = 50
 
     # Anti-blocking measures
-    REQUEST_TIMEOUT: int = 15
-    RETRY_COUNT: int = 3
-    SCRAPING_DELAY_MIN: float = 1.0
-    SCRAPING_DELAY_MAX: float = 3.0
+    REQUEST_TIMEOUT: int = 8  # Reduced from 15 seconds
+    RETRY_COUNT: int = 2  # Reduced from 3
+    SCRAPING_DELAY_MIN: float = 0.5  # Reduced from 1.0
+    SCRAPING_DELAY_MAX: float = 2.0  # Reduced from 3.0
 
     # LLM Configuration
-    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "claude-sonnet-4-6")
-    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "")  # Custom endpoint for local/K8s
+    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME")
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.siliconflow.cn/v1")  # Custom endpoint for local/K8s
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "dummy")  # Required even for local models
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 2000
 
@@ -35,7 +40,7 @@ class Settings:
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # Job sources to scrape
-    ENABLED_SOURCES: List[str] = ["weworkremotely"]  # Use WeWorkRemotely which has simple HTML
+    ENABLED_SOURCES: List[str] = ["weworkremotely", "jobspy"]
 
     # Header rotation for anti-blocking
     USER_AGENTS: List[str] = [
@@ -77,17 +82,19 @@ Instructions:
 6. For preferred roles, infer likely job titles based on experience
 
 Return a valid JSON object with the following structure:
-- name: string (candidate's full name)
-- skills: array of strings (technical skills)
-- experience: array of strings (job descriptions or achievements)
-- education: array of strings (education details)
-- projects: array of strings (project descriptions)
-- preferred_roles: array of strings (likely job titles)
+{{
+  "name": "candidate's full name",
+  "skills": ["skill1", "skill2"],
+  "experience": ["experience1", "experience2"],
+  "education": ["education1", "education2"],
+  "projects": ["project1", "project2"],
+  "preferred_roles": ["role1", "role2"]
+}}
+
+IMPORTANT: Return ONLY the JSON object. Do NOT include any thinking tags, explanations, or additional text.
 
 Resume Text:
-{resume_text}
-
-Return ONLY the JSON object, no other text.
+{{resume_text}}
 """
 
 JOB_MATCH_PROMPT = """
@@ -104,18 +111,20 @@ Your task:
 4. Consider role alignment
 
 Output a JSON object with:
-- match_score: integer 0-100 (how well the candidate matches)
-- reason: string (1-2 sentence explanation of the match)
-- matched_skills: array of strings (skills from resume that match the job)
-- missing_skills: array of strings (skills in job that are missing from resume)
+{{
+  "match_score": 0-100,
+  "reason": "explanation of the match",
+  "matched_skills": ["skill1", "skill2"],
+  "missing_skills": ["skill1", "skill2"]
+}}
 
 Resume Data:
-{resume_data}
+{{resume_data}}
 
 Job Description:
-{job_description}
+{{job_description}}
 
-Return ONLY the JSON object, no other text.
+IMPORTANT: Return ONLY the JSON object. Do NOT include any thinking tags, explanations, or additional text.
 """
 
 

@@ -51,20 +51,24 @@ class IndeedScraper(ScraperBase):
         Returns:
             List of raw job data dictionaries
         """
+        # Handle location - convert empty string or "None" to None
+        if location == "" or location == "None":
+            location = None
+            
         jobs = []
         seen_ids = set()
 
         # Build search URL
         params = {
             "q": query,
-            "limit": 50,  # Indeed returns 10-15 per page
+            "limit": 10,  # Reduced from 50 to get fewer results per page for speed
         }
 
         if location:
             params["l"] = location
 
-        # Indeed pagination - fetch multiple pages
-        num_pages = (max_results // 15) + 1
+        # Indeed pagination - fetch fewer pages for speed
+        num_pages = min(2, (max_results // 10) + 1)  # Reduced from variable pages to max 2 pages
 
         for page in range(num_pages):
             offset = page * 10
@@ -83,8 +87,9 @@ class IndeedScraper(ScraperBase):
             if len(jobs) >= max_results:
                 break
 
-            # Indeed requires delay between requests
-            await asyncio.sleep(random.uniform(1.5, 3.0))
+            # Reduced delay for faster scraping
+            if page < num_pages - 1:  # No delay after last request
+                await asyncio.sleep(random.uniform(0.5, 1.5))  # Reduced from 1.5-3.0
 
         return jobs[:max_results]
 

@@ -12,6 +12,7 @@ from scrapers.indeed import IndeedScraper
 from scrapers.linkedin import LinkedInScraper
 from scrapers.remoteok import RemoteOKScraper
 from scrapers.weworkremotely import WeWorkRemotelyScraper
+from scrapers.jobspy_scraper import JobSpyScraper
 from scrapers.common import ScraperError
 from services.cache import get_cache
 from schemas.job import JobListing, JobSearchResponse, JobSearchRequest
@@ -37,6 +38,7 @@ class JobService:
             "remoteok": RemoteOKScraper(),
             "indeed": IndeedScraper(),
             "linkedin": LinkedInScraper(),
+            "jobspy": JobSpyScraper(),
         }
         self._enabled_sources = settings.ENABLED_SOURCES
 
@@ -138,13 +140,21 @@ class JobService:
             query_parts.extend(query.skills[:3])  # Limit to top 3 skills
         search_query = " ".join(query_parts) if query_parts else "software engineer"
 
-        print(f"[JobService] Fetching from {scraper.NAME}: query='{search_query}', location='{query.location}'")
+        # Handle location - convert empty string or "None" to None for jobspy
+        location = query.location
+        if location == "" or location == "None":
+            location = None
+
+        print(f"[JobService] Fetching from {scraper.NAME}: query='{search_query}', location='{location}'")
 
         raw_jobs = await scraper.search_jobs(
             query=search_query,
-            location=query.location,
+            location=location,
             max_results=max_per_source
         )
+
+        # Debug: print number of raw jobs found
+        print(f"[JobService] {scraper.NAME} found {len(raw_jobs)} raw jobs")
 
         # Convert to JobListing schema
         jobs = []
@@ -152,10 +162,12 @@ class JobService:
             try:
                 job = JobListing(**raw)
                 jobs.append(job)
-            except Exception:
+            except Exception as e:
                 # Skip malformed job entries
+                print(f"[JobService] Error converting job: {e}")
                 continue
 
+        print(f"[JobService] {scraper.NAME} converted to {len(jobs)} valid jobs")
         return jobs
 
     def _generate_search_hash(self, query: JobSearchRequest) -> str:

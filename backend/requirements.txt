@@ -10,6 +10,7 @@ pydantic-settings>=2.10.1
 # LangChain and LLM (latest as of Apr 2026)
 langchain>=1.2.15
 langchain-openai>=1.1.12
+langchain-groq>=1.1.2
 langchain-community>=0.4.1
 langchain-core>=1.2.25
 openai>=2.30.0
